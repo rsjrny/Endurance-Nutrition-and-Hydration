@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+from streamlit_option_menu import option_menu
 import sql
 import utils
 
@@ -37,7 +38,6 @@ def put_nutrition_data(df):
     Read the database containing food information into df
 
     """
-    print('putting table data back')
     sql.dftoSQL(df, 'Product')
 
 
@@ -122,12 +122,19 @@ def extra():
 
 
 def page_setup():
+
     st.set_page_config(page_title='Running Nutrition Dashboard', layout='wide')
     st.markdown('<style>body{background-color: lightgreen;}</style>', unsafe_allow_html=True)
     styles = 'text-align: center; color: blue; font-size:300%; border-style: solid; background-color: powderblue;'
+    # # 2. horizontal menu
+    # selected2 = option_menu(None, ['Settings'],
+    #                         icons=['gear'],
+    #                         menu_icon="cast", default_index=0, orientation="horizontal")
+    # st.text_input("Database Location")
     st.markdown("<h1 style='" + styles + "'>Running Nutrition Dashboard</h1>", unsafe_allow_html=True)
     # https://discuss.streamlit.io/t/colored-boxes-around-sections-of-a-sentence/3201/2
     # local_css("mycss.css")
+
 
     return st.container()
 
@@ -150,11 +157,26 @@ def build_buttons():
         edit value based on button click
     '''
     with st.container():
+        pl = build_prod_list()
         col1, col2, col3, col4 = st.columns(4, gap='small')
         with col1:
+            tprod = st.selectbox('Product:', pl)
             refresh = st.button('Refresh', on_click=refresh_page)
         with col2:
-            refresh = st.button('Clear Quantities', on_click=clear_quantities())
+            if not tprod:
+                tquan = 0
+            tquan = st.number_input('Selected Quantity', value=0)
+            if st.button('Clear All Quantities'):
+                clear_quantities()
+        with col3:
+            st.text("Click to update the Quantity")
+            if st.button('Update Quantity'):
+                update_quantity(tprod, tquan)
+        with col4:
+            st.text("select a product and press to delete from the database")
+            if st.button('Delete Product'):
+                sql.delete_row(tprod)
+        tquan = 0
 
     return
 
@@ -168,12 +190,30 @@ def update_products(inquant=0, inprod='', insod=0, incarb=0, incal=0, inwat=0, i
     :return:
     """
     if not inprod:
-        st.write('product field cannot be empty')
+        st.text('product field cannot be empty')
     else:
         sql.ins_rep(inquant=inquant, inprod=inprod, insod=insod, incarb=incarb, incal=incal, inwat=inwat, inserv=inserv,
                 insrvt=insrvt, incaf=incaf, incom=incom)
 
     refresh_page()
+    return
+
+
+def build_prod_list():
+    """
+    build a list of product names. Also insert a blank product for clearing the fields
+    :return:
+    """
+    ndf = df.loc[:, ['Product']]
+    ndf.loc[-1] = ['']  # adding a row
+    ndf = ndf.sort_values(by=['Product'])
+    mlist = ndf['Product'].tolist()
+    return mlist
+
+
+def update_quantity(prod, quant):
+    sql.update_quantity(prod, quant)
+    get_nutrition_data()
     return
 
 
@@ -188,10 +228,11 @@ def populate_form(val):
 
 
 def build_form(inquant=0, inprod='', insod=0, incarb=0, incal=0, inwat=0, inserv=0, insrvt=' ', incaf=0, incom=''):
-    with st.form('Update'):
+    with st.form('Update',clear_on_submit=True):
         cont1 = st.container()
         with cont1:
-            st.write('Enter or modify products here:')
+            wstr = 'Enter or modify products here:'
+            st.text(wstr)
             prod = st.text_input('product', value=inprod)
             c1, c2, c3, = st.columns(3)
             with c1:
@@ -223,30 +264,26 @@ if __name__ == '__main__':
         pace, miles, waterV, sodiumV, calorieV, compTime, dectime = extra()
         st.subheader("Time to Complete " + str(round(miles, 2)) + " miles: " + str(compTime) + " (" + str(
             round(dectime, 2)) + " hrs.)")
-        st.write("Total Calories Required", round(calorieV * dectime, 2), ', ',
-                 "Total Sodium Required", round(sodiumV * dectime, 2), 'mg, ',
-                 "Total Water Required", round((waterV * dectime) / 1000, 2), 'Litres',
-                 )
+        wstr = "Total Calories Required: " + str(round(calorieV * dectime, 2)) + ', ' + \
+                "Total Sodium Required: " + str(round(sodiumV * dectime, 2)) + ' mg, ' + \
+                 "Total Water Required: " +  str(round((waterV * dectime) / 1000, 2)) + ' Litres'
+        st.text(wstr)
 
         totCal = df['Total Calories'].sum()
         totSod = df['Total Sodium'].sum()
         totCarb = df['Total Carbs'].sum()
-        st.write("Total Calories Selected", totCal,
-                 "Total Sodium Selected", totSod,
-                 "Total Carbs Selected", totCarb,
-                 )
-        st.write("Total Per Hour Calories", round(float(totCal) / float(dectime), 2),
-                 "Total Per Hour Sodium", round(float(totSod) / float(dectime), 2),
-                 "Total Per Hour Carbs", round(float(totCarb) / float(dectime), 2),
-                 )
+        wstr = "Total Calories Selected: " + str(totCal) + " Total Sodium Selected: " + str(totSod) + \
+               " Total Carbs Selected: " + str(totCarb)
 
+        st.text(wstr)
+        wstr = "Total Per Hour Calories: " + str(round(float(totCal) / float(dectime), 2)) + \
+                 " Total Per Hour Sodium: " + str(round(float(totSod) / float(dectime), 2)) + \
+                 " Total Per Hour Carbs: " + str(round(float(totCarb) / float(dectime), 2))
+        st.text(wstr)
         build_buttons()
-        st.dataframe(df, hide_index=True)
-        # ndf = pd.DataFrame({'Product': [' ']]})
-        ndf = df.loc[:, ['Product']]
-        ndf.loc[-1] = ['']  # adding a row
-        ndf = ndf.sort_values(by=['Product'])
-        mlist = ndf['Product'].tolist()
+        with st.expander('Collapse to hide full data table', expanded=True):
+            st.dataframe(df, hide_index=True)
+        mlist = build_prod_list()
         srchfor = st.selectbox('Populate_Form with:', mlist)
 
         if srchfor:

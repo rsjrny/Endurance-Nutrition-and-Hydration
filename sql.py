@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import pandas as pd
+import datetime
 
 dbfields = ['Quanity', 'Product', 'Carbs', 'Sodium', 'Calories', 'Caffeine',
             'Water', 'Servings', 'Serving Size', 'Comments']
@@ -47,40 +48,70 @@ def dftoSQL(df, table):
 
 
 def connect():
-    return sqlite3.connect(os.getcwd() + r'/Datafiles/RunningNutrition.db')
+    # db = os.getcwd() + r'/Datafiles/RunningNutrition.db'
+    # print(db)
+    db = r"C:\Users\russl\PycharmProjects\RunHydrationNutrition\DataFiles\RunningNutrition.db"
+    return sqlite3.connect(db)
 
 
 def ins_rep(inquant=0, inprod='', insod=0, incarb=0, incal=0, inwat=0, inserv=0, insrvt=' ', incaf=0, incom=''):
     # INSERT OR REPLACE INTO data VALUES (NULL, 1, 2, 3);
     con = connect()
-    cur = con.cursor()
-    cur.execute("INSERT OR REPLACE INTO Product VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+    con.execute("INSERT OR REPLACE INTO Product VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                 (inquant, inprod, incarb, insod, incal, incaf, inwat, inserv, insrvt, incom))
-    cur.close()
     con.commit()
+    # print("insrep commit done")
     con.close()
 
 
 def reset_quantity():
+    """
+    clear the quantity column for all products
+
+    """
     # INSERT OR REPLACE INTO data VALUES (NULL, 1, 2, 3);
     con = connect()
-    cur = con.cursor()
-    cur.execute("UPDATE Product SET Quantity = 0")
-    cur.close()
+    con.execute("UPDATE Product SET Quantity = 0")
     con.commit()
+    # print("reset quan commit done")
     con.close()
 
 
 def update_quantity(inprod, inquan):
+    """
+    Update the pruduct with the supplied quantity
+    :param inprod: Product name
+    :param inquan: desired quantity
+    :return:
+    """
+    # print(datetime.datetime.now(), 'updating table: ', inprod, inquan)
     con = connect()
-    cur = con.cursor()
-    cur.execute("UPDATE Product SET Quantity = ? WHERE Product = ?", (inquan, inprod))
-    cur.close()
+    con.execute("UPDATE Product SET Quantity = ? WHERE Product = ?", (inquan, inprod))
     con.commit()
+    # print("update quan commit done")
+    con.close()
+
+
+def delete_row(inprod):
+    """
+    Delete a product from the table
+    :param inprod: Product name
+    :return:
+    """
+    print('inprod=', inprod)
+    con = connect()
+    con.execute("DELETE FROM Product WHERE Product = '" + inprod + "'")
+    con.commit()
+    # print("update quan commit done")
     con.close()
 
 
 def searchdb(query):
+    """
+    search the database using the supplied query
+    :param query: ex. SELECT Sodium FROM Product WHERE Product = 'GU Gel'
+    :return: list of returned results
+    """
     # print(query)
     con = connect()
     cur = con.cursor()
@@ -93,6 +124,10 @@ def searchdb(query):
 
 
 def printDB():
+    """
+    Print the contents of the Product table
+    :return:
+    """
     con = connect()
     cur = con.cursor()
     cur.execute("""select * from Product""")
