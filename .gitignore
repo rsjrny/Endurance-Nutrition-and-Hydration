@@ -3,3 +3,6 @@ venv/
 DataFiles/
 .idea/
 __pycache__/
+**/build/
+**/dist/
+*.ini

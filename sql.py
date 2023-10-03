@@ -1,10 +1,18 @@
 import sqlite3
 import os
 import pandas as pd
-import datetime
 
-dbfields = ['Quanity', 'Product', 'Carbs', 'Sodium', 'Calories', 'Caffeine',
-            'Water', 'Servings', 'Serving Size', 'Comments']
+
+def save_db_loc(dbloc):
+    # dbloc = os.path.dirname(dbloc)
+
+    os.environ['RHN_DBLOC'] = dbloc
+
+
+def get_db_loc():
+
+    # return os.getenv('RHN_DBLOC')
+    return r'C:\Users\russl\PycharmProjects\RunHydrationNutrition\DataFiles\RunningNutrition.db'
 
 
 def empty_table(prod):
@@ -13,6 +21,19 @@ def empty_table(prod):
     cur.execute("DELETE FROM Product ")
     cur.close()
     con.commit()
+    con.close()
+
+
+def create_products_table():
+    con = connect()
+    crtb = '''CREATE TABLE "Product" ("Quantity" INTEGER, "Product" TEXT NOT NULL UNIQUE, 
+    "Carbs" INTEGER, "Sodium" INTEGER,  "Calories"	INTEGER, "Caffeine"	INTEGER, 
+    "Water" INTEGER, "Servings" INTEGER, "Serving Size"	TEXT, 
+    "Total Carbs"	INTEGER GENERATED ALWAYS AS ("Quantity" * "Carbs") STORED, 	
+    "Total Sodium"	INTEGER GENERATED ALWAYS AS ("Quantity" * "Sodium") STORED,
+    "Total Calories"	INTEGER GENERATED ALWAYS AS ("Quantity" * "Calories") STORED, 
+    "Comments"	TEXT, 	PRIMARY KEY("Product") ;
+    '''
     con.close()
 
 
@@ -50,17 +71,24 @@ def dftoSQL(df, table):
 def connect():
     # db = os.getcwd() + r'/Datafiles/RunningNutrition.db'
     # print(db)
+    db = get_db_loc()
+    # ndb = db+'RunningNutrition.db'
     db = r"C:\Users\russl\PycharmProjects\RunHydrationNutrition\DataFiles\RunningNutrition.db"
+    # if not os.path.exists(ndb):
+    #     exit(8)
+    # else:
+    #
     return sqlite3.connect(db)
 
 
 def ins_rep(inquant=0, inprod='', insod=0, incarb=0, incal=0, inwat=0, inserv=0, insrvt=' ', incaf=0, incom=''):
     # INSERT OR REPLACE INTO data VALUES (NULL, 1, 2, 3);
+    print('in ins_rep')
     con = connect()
     con.execute("INSERT OR REPLACE INTO Product VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                 (inquant, inprod, incarb, insod, incal, incaf, inwat, inserv, insrvt, incom))
     con.commit()
-    # print("insrep commit done")
+    print("insrep commit done")
     con.close()
 
 
@@ -98,7 +126,7 @@ def delete_row(inprod):
     :param inprod: Product name
     :return:
     """
-    print('inprod=', inprod)
+    # print('inprod=', inprod)
     con = connect()
     con.execute("DELETE FROM Product WHERE Product = '" + inprod + "'")
     con.commit()
@@ -137,6 +165,53 @@ def printDB():
         print(row)
     cur.close()
     con.close()
+
+
+def sum_column(column, query=''):
+    con = connect()
+    cur = con.cursor()
+    if query =='':
+        cur.execute("SELECT SUM("+column+") FROM Product")
+    else:
+        cur.execute(query)
+    sum = cur.fetchone()
+    cur.close()
+    con.close()
+
+    return sum[0]
+
+
+def sum_water():
+    con = connect()
+    cur = con.cursor()
+    cur.execute("SELECT SUM(Quantity*Water) FROM Product WHERE Water > 0")
+    sum = cur.fetchone()
+    cur.close()
+    con.close()
+
+    return sum[0]
+
+
+def sum_calories():
+    con = connect()
+    cur = con.cursor()
+    cur.execute("SELECT SUM(Quantity*Calories) FROM Product WHERE Quantity > 0")
+    sum = cur.fetchone()
+    cur.close()
+    con.close()
+
+    return sum[0]
+
+
+def sum_sodium():
+    con = connect()
+    cur = con.cursor()
+    cur.execute("SELECT SUM(Quantity*Sodium) FROM Product WHERE Quantity > 0")
+    sum = cur.fetchone()
+    cur.close()
+    con.close()
+
+    return sum[0]
 
 
 # reset_quantity()
