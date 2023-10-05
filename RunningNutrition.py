@@ -320,6 +320,13 @@ while True:
                     incom=values['-PRODCOMM-'])
         df, tabdata, headings, mlist = build_product_lists()
         window['-NUTRITIONPROD-'].update(mlist)
+        # sort the table and update the product lists for display
+        sorted_table_values, sortO = utils.sort_table(tabdata, 0, True)
+        window['-PTABLE-'].update(sorted_table_values)
+        sdf, sdata, shead = utils.build_selected_list(df)
+        window['-STABLE-'].update(sdata)
+        #
+
         pass
 
     if event == 'Update Quantity':  # perform quantity Update
