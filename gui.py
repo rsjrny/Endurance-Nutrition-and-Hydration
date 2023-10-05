@@ -9,8 +9,8 @@ import utils
 # TODO: find out why 2 clicks are required on the update quant button
 # print('reading config')
 # config = configparser.ConfigParser()
-# #Get the absolute path of ini file by doing os.getcwd() and joining it to config.ini
-# ini_path = os.path.join(os.getcwd(),'config.ini')
+# #Get the absolute path of ini file by doing os.getcwd() and joining it to config.iniold
+# ini_path = os.path.join(os.getcwd(),'config.iniold')
 # config.read(ini_path)
 # set default values for 1st time run. These values are updated by the user later on and the vars will be updated
 if os.getenv('paceV') is None:

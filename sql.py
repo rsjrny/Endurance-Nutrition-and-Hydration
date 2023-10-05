@@ -83,12 +83,12 @@ def connect():
 
 def ins_rep(inquant=0, inprod='', insod=0, incarb=0, incal=0, inwat=0, inserv=0, insrvt=' ', incaf=0, incom=''):
     # INSERT OR REPLACE INTO data VALUES (NULL, 1, 2, 3);
-    print('in ins_rep')
+    # print('in ins_rep')
     con = connect()
     con.execute("INSERT OR REPLACE INTO Product VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                 (inquant, inprod, incarb, insod, incal, incaf, inwat, inserv, insrvt, incom))
     con.commit()
-    print("insrep commit done")
+    # print("insrep commit done")
     con.close()
 
 

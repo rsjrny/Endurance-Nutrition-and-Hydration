@@ -1,10 +1,12 @@
 import configparser
 import operator
 import pandas as pd
+import os
 
 import PySimpleGUI as sg
 
 import sql
+import sys
 
 
 # https://docs.python.org/3/library/configparser.html
@@ -51,7 +53,6 @@ def calc_time(miles, s_pace):
 
 
 def calc_requirements(inwater=0, incal=0, insod=0, dectime=0.0):
-    # print('calcin = ', incal, insod, inwater, dectime)
     reqcal = float(incal) * dectime
     reqsod = float(insod) * dectime
     reqwat = float(inwater) * dectime
@@ -60,21 +61,20 @@ def calc_requirements(inwater=0, incal=0, insod=0, dectime=0.0):
 
 
 def get_ini():
-    # inifile = os.path.join(os.getcwd(), 'config.ini')
-    inifile = 'config.ini'
+    inifile = os.path.join(os.getcwd(), 'DataFiles/config.ini')
     config = configparser.ConfigParser()
-    # Read the configuration from the file
-    config.read('config.ini')
+    config.read(inifile)
 
     return inifile, config
 
 
 def set_config(config, section, element, value):
-    config[section][element] = value
+    config.set(section, element, value)
 
 
 def get_config(config, section, element):
-    return config[section][element]
+
+    return config.get(section, element)
 
 
 def write_config(infile, config):
@@ -88,15 +88,12 @@ def rewrite_config_file(inifile, configs, values):
     configs['DEFAULT']['caloriesV'] = values['-INCALORIES-']
     configs['DEFAULT']['waterV'] = values['-INWATER-']
     configs['DEFAULT']['sodiumV'] = values['-INSODIUM-']
-    # configs['DEFAULT']['theme'] = values['-THEME-']
     write_config(inifile, configs)
 
 
 def sum_water(df, headers):
     sumwater = pd.DataFrame(headers)
     sumwater['sumwater'] = pd.to_numeric(df['Water'])
-    watsum = sumwater['sumwater'].sum()
-    # print(watsum)
 
 
 def build_prod_list(df):
@@ -132,7 +129,7 @@ def populate_table():
         values = table rows
         headings = column headers
     """
-    df = sql.tableToDF("""SELECT * FROM Product""")
+    df = sql.tableToDF("""SELECT * FROM Product ORDER BY Product""")
     values = df.values.tolist()
     headings = df.columns.tolist()
 
