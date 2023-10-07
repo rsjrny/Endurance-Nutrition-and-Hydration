@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 import helpfiles
 import sql
+import textwrap
 import utils
 
 
@@ -88,52 +89,54 @@ sg.theme('BlueMono')
 # ------ Menu Definition ------ #
 menu_def = [['&File', ['E&xit']],
             ['&Settings',
-            ['Display Theme Choices', 'Select Theme', 'Nutritionix (not available yet)', ['AppId', 'AppKey']], ],
+             ['Display Theme Choices', 'Select Theme', 'Nutritionix (not available yet)', ['AppId', 'AppKey']], ],
             ['&Help', ['&Using Running Nutrition', '&About...']], ]
 
 # ------- Build the input fields -------- #
-column1 = [[sg.Text('Run Distance'), ],
-           [sg.InputText(size=12, key='-INDISTANCE-', default_text=milesV, tooltip='Enter the run distance',
+column1 = [[sg.Text('Run Distance', expand_y=True, expand_x=True), ],
+           [sg.InputText(size=5, key='-INDISTANCE-', default_text=milesV, tooltip='Enter the run distance',
                          enable_events=True)],
            [sg.Text('')],
-           [sg.Text('   ', size=15)],
+           [sg.Text('   ', size=5)],
            [sg.Text('')],
-           [sg.Text('   ', size=15)]
+           # [sg.Text('   ', size=15)]
+           [sg.Button('Refresh'), sg.Button('Exit')]
            ]
 
 column2 = [[sg.Text('Run Pace')],
-           [sg.InputText(size=8, key='-INPACE-', default_text=paceV, tooltip='Enter your desired run pace', enable_events=False)],
+           [sg.InputText(size=6, key='-INPACE-', default_text=paceV, tooltip='Enter your desired run pace',
+                         enable_events=False)],
            [sg.Text('')],
-           [sg.Text('   ', size=15)],
+           [sg.Text('   ', size=5)],
            [sg.Text('')],
-           [sg.Text('   ', size=15)]
+           [sg.Text('   ', size=5)]
            ]
 
 column3 = [[sg.Text('Water/hr. (ml)')],
-           [sg.InputText(size=13, key='-INWATER-', default_text=waterV, enable_events=True,
+           [sg.InputText(size=5, key='-INWATER-', default_text=waterV, enable_events=True,
                          tooltip='Enter your water requirements per hour in ml')],
-           [sg.Text('Total Water Required (Liters)', size=22)],
-           [sg.Text('ReqWat', key='-REQWAT-', size=15, background_color='White')],
-           [sg.Text('Total Water Selected')],
-           [sg.Text('selwater here', key='-SELWAT-', size=15, background_color='White')]
+           [sg.Text('Water Required (Liters)')],
+           [sg.Text('ReqWat', key='-REQWAT-', size=7, background_color='White')],
+           [sg.Text('Water Selected')],
+           [sg.Text('selwater here', key='-SELWAT-', size=7, background_color='White')]
            ]
 
 column4 = [[sg.Text('Calories/hr.')],
-           [sg.InputText(size=12, key='-INCALORIES-', default_text=caloriesV, enable_events=True,
+           [sg.InputText(size=5, key='-INCALORIES-', default_text=caloriesV, enable_events=True,
                          tooltip='Enter your calorie requirement per hour')],
-           [sg.Text('Total Calories Required (g)')],
-           [sg.Text('ReqCal', key='-REQCAL-', size=12, background_color='White')],
-           [sg.Text('Total Calories Selected')],
-           [sg.Text('selcal here', key='-SELCAL-', size=15, background_color='White')]
+           [sg.Text('Calories Required (g)')],
+           [sg.Text('ReqCal', key='-REQCAL-', size=7, background_color='White')],
+           [sg.Text('Calories Selected')],
+           [sg.Text('selcal here', key='-SELCAL-', size=7, background_color='White')]
            ]
 
 column5 = [[sg.Text('Sodium/hr. (mg)')],
-           [sg.InputText(size=15, key='-INSODIUM-', default_text=sodiumV, enable_events=True,
+           [sg.InputText(size=5, key='-INSODIUM-', default_text=sodiumV, enable_events=True,
                          tooltip='Enter your sodium requirement per hour')],
-           [sg.Text('Total Sodium Required (mg)')],
-           [sg.Text('ReqSod', key='-REQSOD-', size=15, background_color='White')],
-           [sg.Text('Total Sodium Selected')],
-           [sg.Text('sel sod here', key='-SELSOD-', size=15, background_color='White')]
+           [sg.Text('Sodium Required (mg)')],
+           [sg.Text('ReqSod', key='-REQSOD-', size=7, background_color='White')],
+           [sg.Text('Sodium Selected')],
+           [sg.Text('sel sod here', key='-SELSOD-', size=7, background_color='White')]
            ]
 
 input_columns = [
@@ -147,20 +150,20 @@ input_columns = [
 df, tabdata, headings, mlist = build_product_lists()
 sdf, sdata, shead = utils.build_selected_list(df)
 
-select_columns = [[sg.Listbox(mlist, select_mode='LISTBOX_SELECT_MODE_SINGLE', size=(40, 15),
+select_columns = [[sg.Listbox(mlist, select_mode='LISTBOX_SELECT_MODE_SINGLE', size=(30, 15),
                               enable_events=True, key='-NUTRITIONPROD-',
                               tooltip='This is a list of all the available products. If you choose one it '
                                       'will populate the Update Product box and highlight '
                                       'the entry in the details table')],
                   [sg.Button('Update Quantity'),
                    sg.InputText(size=5, key='-NEWQUANT-'),
+                   sg.Push(),
                    sg.Button('Delete Entry')
                    ]]
 
 input_table = [
     [sg.Table(values=tabdata, headings=headings, enable_click_events=True,
               justification='l', selected_row_colors=('white', 'blue'),
-              # select_mode=sg.TABLE_SELECT_MODE_BROWSE,
               alternating_row_color='lightyellow', display_row_numbers=False,
               key='-PTABLE-', expand_x=True, expand_y=True), ]
 ]
@@ -170,85 +173,99 @@ table_frame = [[sg.Frame('Nutrition Table', input_table)]]
 # build the new product fields
 ncolumnA = [
     [sg.Text('Product Name')],
-    [sg.InputText(size=40, key='-NNPROD-', enable_events=True)]
+    [sg.InputText(size=30, key='-NNPROD-', enable_events=True)]
 ]
 
 ncolumn1 = [
     [sg.Text('Calories')],
-    [sg.InputText(size=12, key='-PRODCALS-', default_text='0')],
-    [sg.Text('Servings')],
-    [sg.InputText(size=12, key='-PRODSRV-', default_text='0')],
+    [sg.InputText(size=5, key='-PRODCALS-', default_text='0')],
     [sg.Text('Caffeine')],
-    [sg.InputText(size=15, key='-PRODCAFF-', default_text='0')],
-    [sg.Text('Comment')],
-    [sg.InputText(size=15, key='-PRODCOMM-', default_text='0')],
-    [sg.Button('Add or Update Product')]
+    [sg.InputText(size=5, key='-PRODCAFF-', default_text='0')],
+    [sg.Text('Servings')],
+    [sg.InputText(size=5, key='-PRODSRV-', default_text='0')],
+
 ]
 
 ncolumn2 = [
     [sg.Text('Carbs')],
-    [sg.InputText(size=12, key='-PRODCARBS-', default_text='0')],
-    [sg.Text('Serving Size')],
-    [sg.InputText(size=12, key='-PRODSRVS-', default_text='0')],
+    [sg.InputText(size=5, key='-PRODCARBS-', default_text='0')],
     [sg.Text('Water (ml)')],
-    [sg.InputText(size=15, key='-PRODWATR-', default_text='0')],
-    [sg.Text('Quantity')],
-    [sg.InputText(size=15, key='-PRODQUNT-', default_text='0')],
-    [sg.Text('')]
+    [sg.InputText(size=5, key='-PRODWATR-', default_text='0')],
+    [sg.Text('Serving Size')],
+    [sg.InputText(size=10, key='-PRODSRVS-', default_text='0')],
+
 ]
 
 ncolumn3 = [
     [sg.Text('Sodium (mg)')],
-    [sg.InputText(size=13, key='-PRODSOD-', default_text='0')],
+    [sg.InputText(size=5, key='-PRODSOD-', default_text='0')],
     [sg.Text('')],
     [sg.Text('')],
-    [sg.Text('')],
-    [sg.Text('')],
-    [sg.Text('')],
-    [sg.Text('')],
-    [sg.Text('')],
+    [sg.Text('Quantity')],
+    [sg.InputText(size=5, key='-PRODQUNT-', default_text='0')],
+]
+
+ncolumnt = [
+    [sg.Text('Comment')],
+    [sg.InputText(size=30, key='-PRODCOMM-', default_text=' ')],
+    [sg.Button('Add or Update Product')]
 ]
 
 ninput_columns = [
     [sg.Column(ncolumnA)],
-    [sg.Column(ncolumn1), sg.Column(ncolumn2), sg.Column(ncolumn3)],
+    [sg.Column(ncolumn1),
+     sg.Column(ncolumn2),
+     sg.Column(ncolumn3)],
+    [sg.Column(ncolumnt)],
 ]
+
+helptext = helpfiles.get_mainhelp()
+
+width, lines = size = (40, 32)
+wrapper = textwrap.TextWrapper(width=40, max_lines=32, placeholder=' ...')
+new_text = '\n'.join(wrapper.wrap(helptext))
+
+ninstruct_columns = [[sg.Column([[sg.Text(helptext, size=(40,32), font=('Helvetica', 12) )]], scrollable=True, key='-MAINHELP-')]]
 
 time_calc = [
     sg.Text(compmsg, key='-COMPMSG-', font=('Helvetica', 24))
 ]
 
-input_frame = [
-    [sg.Frame('Input Area', input_columns)]
-]
-
 selected_table = [
-    [sg.Table(values=sdata, headings=shead, enable_click_events=False,
-              size=(45, 17), alternating_row_color='lightyellow',
+    [sg.Table(values=sdata, headings=['Qty', 'Prod', 'Srv'], enable_click_events=False,
+              col_widths=[5, 10, 5],
+              # auto_size_columns=True,
+              # size=(45, 17),
+              alternating_row_color='lightyellow',
               justification='l', selected_row_colors=('white', 'blue'),
-              key='-STABLE-', expand_x=True, expand_y=True), ]
+              key='-STABLE-') ]
+]
+input_frame = [
+    [sg.Frame('Input Area', input_columns, expand_y=False, expand_x=True),
+     sg.Frame('Selected Products', selected_table, expand_y=False, expand_x=True)]
 ]
 
 update_columns = [[sg.Frame('Product Selection', select_columns),
-                   sg.Frame('Selected Products', selected_table),
-                   sg.Frame('Add or Update Products', ninput_columns)]]
-
-# the completed layout which Window will display
+                   sg.Frame('Add or Update Products', ninput_columns),
+                   sg.Frame('Instructions', ninstruct_columns)]]
 
 layout = [
     [sg.Menu(menu_def, tearoff=True)],
     [input_frame],
+    [sg.HorizontalSeparator()],
     [time_calc],
+    [sg.HorizontalSeparator()],
     [update_columns],
     [table_frame],
-    [sg.Button('Refresh'), sg.Button('Exit')]
 ]
 
 # Create the Window
 
 sortO = True  # flag to track the table sort order
-window = sg.Window('Running Nutrition and Hydration', layout, resizable=True)
 
+window = sg.Window('Running Nutrition and Hydration', layout, resizable=True, grab_anywhere=True,
+                   auto_size_buttons=True, finalize=True, element_justification='l')
+# window['-MAINHELP-'].TKOut.output.config(wrap='word')
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     event, values = window.read()
@@ -339,7 +356,7 @@ while True:
             quant = values['-NEWQUANT-'][0]
             sql.update_quantity(qprod, quant)
             df, tabdata, headings, mlist = build_product_lists()
-            # TODO: now resort table by quant and redisplay
+            # now resort table by quant and redisplay
             sorted_table_values, sortO = utils.sort_table(tabdata, 0, True)
             window['-PTABLE-'].update(sorted_table_values)
             sdf, sdata, shead = utils.build_selected_list(df)

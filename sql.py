@@ -10,9 +10,7 @@ def save_db_loc(dbloc):
 
 
 def get_db_loc():
-
-    # return os.getenv('RHN_DBLOC')
-    return r'C:\Users\russl\PycharmProjects\RunHydrationNutrition\DataFiles\RunningNutrition.db'
+    return os.path.join(os.getcwd(), 'DataFiles/RunningNutrition.db')
 
 
 def empty_table(prod):
@@ -69,15 +67,8 @@ def dftoSQL(df, table):
 
 
 def connect():
-    # db = os.getcwd() + r'/Datafiles/RunningNutrition.db'
-    # print(db)
     db = get_db_loc()
-    # ndb = db+'RunningNutrition.db'
-    db = r"C:\Users\russl\PycharmProjects\RunHydrationNutrition\DataFiles\RunningNutrition.db"
-    # if not os.path.exists(ndb):
-    #     exit(8)
-    # else:
-    #
+
     return sqlite3.connect(db)
 
 
@@ -101,7 +92,6 @@ def reset_quantity():
     con = connect()
     con.execute("UPDATE Product SET Quantity = 0")
     con.commit()
-    # print("reset quan commit done")
     con.close()
 
 
