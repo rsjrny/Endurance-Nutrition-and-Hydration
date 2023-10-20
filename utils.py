@@ -54,11 +54,32 @@ def get_ini():
     read the ini file and return all values in a dict
     :return:
     """
+    # print('in get_ini')
     inifile = os.path.join(os.getcwd(), 'DataFiles/config.ini')
+
+    if not os.path.exists(inifile):
+        create_inifile(inifile)
+        # print('created new ini')
     config = configparser.ConfigParser()
     config.read(inifile)
+    return inifile, config, dict(config.items('RNHDEFS'))
 
-    return inifile, config, config.defaults()
+
+def create_inifile(inifile):
+    config = configparser.RawConfigParser()
+    config.add_section('RNHDEFS')
+    config.set('RNHDEFS', 'milesv', '10')
+    config.set('RNHDEFS', 'pacev', '7:05')
+    config.set('RNHDEFS', 'caloriesv', '240')
+    config.set('RNHDEFS', 'sodiumv', '500')
+    config.set('RNHDEFS', 'waterv', '500')
+    config.set('RNHDEFS', 'dectime', '0.0')
+    config.set('RNHDEFS', 'comptime', '4:30:00')
+    config.set('RNHDEFS', 'compmsg', 'Time to complete is: 2:05:00 (2.08) hours')
+    config.set('RNHDEFS', 'theme', 'BlueMono')
+    config.set('RNHDEFS', 'location', 'None')
+    write_config(inifile, config)
+    return
 
 
 def set_config(config, section, element, value):
@@ -73,19 +94,20 @@ def get_config(config, section, element):
 def write_config(infile, config):
     with open(infile, 'w') as configfile:
         config.write(configfile)
+    configfile.close()
 
 
 def rewrite_config_file(inifile, configs, values):
-    configs['DEFAULT']['milesV'] = values['milesv']
-    configs['DEFAULT']['paceV'] = values['pacev']
-    configs['DEFAULT']['caloriesV'] = values['caloriesv']
-    configs['DEFAULT']['waterV'] = values['waterv']
-    configs['DEFAULT']['sodiumV'] = values['sodiumv']
-    configs['DEFAULT']['dectime'] = values['dectime']
-    configs['DEFAULT']['comptime'] = values['comptime']
-    configs['DEFAULT']['compmsg'] = values['compmsg']
-    configs['DEFAULT']['theme'] = values['theme']
-    # configs['DEFAULT']['location'] = values['winloc']
+    configs['RNHDEFS']['milesv'] = values['milesv']
+    configs['RNHDEFS']['pacev'] = values['pacev']
+    configs['RNHDEFS']['caloriesv'] = values['caloriesv']
+    configs['RNHDEFS']['waterv'] = values['waterv']
+    configs['RNHDEFS']['sodiumv'] = values['sodiumv']
+    configs['RNHDEFS']['dectime'] = values['dectime']
+    configs['RNHDEFS']['comptime'] = values['comptime']
+    configs['RNHDEFS']['compmsg'] = values['compmsg']
+    configs['RNHDEFS']['theme'] = values['theme']
+    configs['RNHDEFS']['location'] = values['location']
     write_config(inifile, configs)
 
 

@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 from ctypes import windll
-
+import ast
 # https://stackoverflow.com/questions/41315873/attempting-to-resolve-blurred-tkinter-text-scaling-on-windows-10-high-dpi-disp/43046744
 windll.shcore.SetProcessDpiAwareness(1)
 import helpfiles
@@ -73,12 +73,14 @@ def check_input_values(values):
     return values
 
 
-def set_vvalues(invals):
+def set_vvalues():
+    # print('in set vvalues: ', vvalues)
     vvalues['milesv'] = values['-INDISTANCE-']
     vvalues['pacev'] = values['-INPACE-']
     vvalues['caloriesv'] = values['-INCALORIES-']
     vvalues['sodiumv'] = values['-INSODIUM-']
     vvalues['waterv'] = values['-INWATER-']
+    vvalues['location'] = winloc
 
 
 def load_selection_list(self):
@@ -106,12 +108,12 @@ def reload_all_tables(self):
 
 
 def get_pop_location(window):
-    poploc = window.current_location()
-    poploc0 = poploc[0] + 1000
-    poploc1 = poploc[1] + 200
+    winloc = window.current_location()
+    poploc0 = winloc[0] + 1000
+    poploc1 = winloc[1] + 200
     poploc = (poploc0, poploc1)
 
-    return poploc
+    return winloc, poploc
 
 
 def make_window(theme=None):
@@ -288,8 +290,14 @@ def make_window(theme=None):
         [update_columns],
         [table_frame],
     ]
-    return sg.Window('Running Nutrition and Hydration', layout, resizable=True, grab_anywhere=True,
-                     finalize=True, auto_size_buttons=True, element_justification='l')
+
+    window = sg.Window('Running Nutrition and Hydration', layout, resizable=True, grab_anywhere=True,
+                       finalize=True, auto_size_buttons=True, element_justification='l')
+    if vvalues['location'] != 'None':
+        winloc = ast.literal_eval(vvalues['location'])
+        window.move(winloc[0], winloc[1])
+
+    return window
 
 
 FRAME_BORDER_WIDTH = 10
@@ -301,7 +309,7 @@ paceV = vvalues['pacev']
 caloriesV = vvalues['caloriesv']
 sodiumV = vvalues['sodiumv']
 waterV = vvalues['waterv']
-winloc = vvalues['location']
+# winloc = vvalues['location']
 
 s_pace = utils.pace_to_seconds(paceV)
 compTime, dectime = utils.calc_time(float(milesV), s_pace)
@@ -315,20 +323,15 @@ sdf, sdata, shead = utils.build_selected_list(df)
 sortO = True  # flag to track the table sort order
 
 window = make_window(vvalues['theme'])
-# print(vvalues['location'])
-# if 'None' not in vvalues['location']:
-#     print('it thinks i am not nine')
-#     window.move(vvalues['location'])
-
 
 while True:
     event, values = window.read()
-    winloc = get_pop_location(window)
-    # vvalues['location'] = winloc
-    poploc = winloc
+    winloc, poploc = get_pop_location(window)
+    print('winloc = ', winloc, 'poploc = ', poploc)
+    vvalues['location'] = str(winloc)
     if event == sg.WIN_CLOSED or event == 'Exit':  # if user closes window or clicks cancel
         break
-    set_vvalues(vvalues)
+    set_vvalues()
     df, tabdata, headings, mlist = build_product_lists()
     sdf, sdata, shead = utils.build_selected_list(df)
     window['-PTABLE-'].update(tabdata)
@@ -352,7 +355,6 @@ while True:
         sg.Print(sdf.to_string(index=False), no_titlebar=True, location=poploc)
 
     if event == 'Using Running Nutrition':
-
         sg.PopupOK('Help', helpfiles.get_mainhelp(), keep_on_top=True, location=poploc)
 
     if event == 'Display Theme Choices':
@@ -408,7 +410,8 @@ while True:
     if event == 'Add or Update Product':
         # print('in Add or Update Product')
         if values['-NNPROD-'] == '':
-            sg.popup_error('Enter the product information before clicking the Add button', keep_on_top=True, location=poploc)
+            sg.popup_error('Enter the product information before clicking the Add button', keep_on_top=True,
+                           location=poploc)
             continue
         sql.ins_rep(inquant=values['-PRODQUNT-'], inprod=values['-NNPROD-'], insod=values['-PRODSOD-'],
                     incarb=values['-PRODCARBS-'], incal=values['-PRODCALS-'], inwat=values['-PRODWATR-'],
@@ -448,7 +451,8 @@ while True:
             sg.popup_error('No product selected', keep_on_top=True, location=poploc)
             continue
         else:
-            if sg.popup_ok_cancel('are you sure you want to delete ' + values['-NUTRITIONPROD-'][0], keep_on_top=True, location=poploc) != 'OK':
+            if sg.popup_ok_cancel('are you sure you want to delete ' + values['-NUTRITIONPROD-'][0], keep_on_top=True,
+                                  location=poploc) != 'OK':
                 continue
             else:
                 qprod = values['-NUTRITIONPROD-'][0]
