@@ -94,26 +94,15 @@ def reload_all_tables(self):
     df, tabdata, headings, mlist = build_product_lists()
     sdf, sdata, shead = utils.build_selected_list(df)
 
-    # load_selection_list()
-    # populate the products display table
-    table = self.ui.tab_Nutrition
-    model = TableModel(df)
-    table.setModel(self.model)
-
-    # populate the selected products display table
-    self.table = self.ui.tab_Selected_products
-    self.ui.tab_Nutrition.clicked.connect(self.nuttabClicked)
-    self.model = TableModel(sdf)
-    self.table.setModel(self.model)
-
 
 def get_pop_location(window):
     winloc = window.current_location()
+    winsize = window.get_screen_size()
     poploc0 = winloc[0] + 1000
     poploc1 = winloc[1] + 200
     poploc = (poploc0, poploc1)
 
-    return winloc, poploc
+    return winloc, poploc, winsize
 
 
 def make_window(theme=None):
@@ -296,11 +285,10 @@ def make_window(theme=None):
     if vvalues['location'] != 'None':
         winloc = ast.literal_eval(vvalues['location'])
         window.move(winloc[0], winloc[1])
+        # TODO: implement window size remember (winsize var)
 
     return window
 
-
-FRAME_BORDER_WIDTH = 10
 
 # get the ini file values for the window
 inifile, configs, vvalues = utils.get_ini()
@@ -309,11 +297,8 @@ paceV = vvalues['pacev']
 caloriesV = vvalues['caloriesv']
 sodiumV = vvalues['sodiumv']
 waterV = vvalues['waterv']
-# winloc = vvalues['location']
-
-s_pace = utils.pace_to_seconds(paceV)
-compTime, dectime = utils.calc_time(float(milesV), s_pace)
-compmsg = 'Time to complete is: ' + str(compTime) + '   (' + str(dectime) + ') hours'
+compTime = vvalues['comptime']
+compmsg = vvalues['compmsg']
 
 df, tabdata, headings, mlist = build_product_lists()
 sdf, sdata, shead = utils.build_selected_list(df)
@@ -326,9 +311,10 @@ window = make_window(vvalues['theme'])
 
 while True:
     event, values = window.read()
-    winloc, poploc = get_pop_location(window)
-    print('winloc = ', winloc, 'poploc = ', poploc)
+    # print(event, values)
+    winloc, poploc, winsize = get_pop_location(window)
     vvalues['location'] = str(winloc)
+    vvalues['winsize'] = str(winsize)
     if event == sg.WIN_CLOSED or event == 'Exit':  # if user closes window or clicks cancel
         break
     set_vvalues()
@@ -386,15 +372,13 @@ while True:
         for item in tabdata:
             if item[1] == str(values['-NUTRITIONPROD-'][0]):
                 window['-PTABLE-'].update(select_rows=[itnum])
-                # print('len tabdata = ', len(tabdata))
                 if itnum < 5:
                     itnum = 0
                 elif itnum > len(tabdata) - 4:
                     itnum = len(tabdata) - 1
                 else:
                     # itnum = itnum + 4
-                    continue
-                # print('itnum = ', itnum)
+                    pass
                 window['-PTABLE-'].Widget.see(window['-PTABLE-'].tree_ids[itnum])
 
                 break

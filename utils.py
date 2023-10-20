@@ -78,6 +78,7 @@ def create_inifile(inifile):
     config.set('RNHDEFS', 'compmsg', 'Time to complete is: 2:05:00 (2.08) hours')
     config.set('RNHDEFS', 'theme', 'BlueMono')
     config.set('RNHDEFS', 'location', 'None')
+    config.set('RNHDEFS', 'winsize', 'None')
     write_config(inifile, config)
     return
 
@@ -108,6 +109,7 @@ def rewrite_config_file(inifile, configs, values):
     configs['RNHDEFS']['compmsg'] = values['compmsg']
     configs['RNHDEFS']['theme'] = values['theme']
     configs['RNHDEFS']['location'] = values['location']
+    configs['RNHDEFS']['winsize'] = values['winsize']
     write_config(inifile, configs)
 
 
