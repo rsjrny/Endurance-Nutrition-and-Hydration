@@ -6,20 +6,9 @@ import os
 import PySimpleGUI as sg
 
 import sql
-import sys
 
 
 # https://docs.python.org/3/library/configparser.html
-
-
-def get_vars(varname):
-
-    return
-
-
-def save_vars(varname):
-
-    return
 
 
 def pace_to_seconds(pace):
@@ -61,11 +50,15 @@ def calc_requirements(inwater=0, incal=0, insod=0, dectime=0.0):
 
 
 def get_ini():
+    """
+    read the ini file and return all values in a dict
+    :return:
+    """
     inifile = os.path.join(os.getcwd(), 'DataFiles/config.ini')
     config = configparser.ConfigParser()
     config.read(inifile)
 
-    return inifile, config
+    return inifile, config, config.defaults()
 
 
 def set_config(config, section, element, value):
@@ -83,11 +76,16 @@ def write_config(infile, config):
 
 
 def rewrite_config_file(inifile, configs, values):
-    configs['DEFAULT']['milesV'] = values['-INDISTANCE-']
-    configs['DEFAULT']['paceV'] = values['-INPACE-']
-    configs['DEFAULT']['caloriesV'] = values['-INCALORIES-']
-    configs['DEFAULT']['waterV'] = values['-INWATER-']
-    configs['DEFAULT']['sodiumV'] = values['-INSODIUM-']
+    configs['DEFAULT']['milesV'] = values['milesv']
+    configs['DEFAULT']['paceV'] = values['pacev']
+    configs['DEFAULT']['caloriesV'] = values['caloriesv']
+    configs['DEFAULT']['waterV'] = values['waterv']
+    configs['DEFAULT']['sodiumV'] = values['sodiumv']
+    configs['DEFAULT']['dectime'] = values['dectime']
+    configs['DEFAULT']['comptime'] = values['comptime']
+    configs['DEFAULT']['compmsg'] = values['compmsg']
+    configs['DEFAULT']['theme'] = values['theme']
+    # configs['DEFAULT']['location'] = values['winloc']
     write_config(inifile, configs)
 
 
@@ -114,7 +112,7 @@ def build_selected_list(df):
     :return: df
     """
     ndf = df.loc[df['Quantity'] > 0].copy()
-    ndf = ndf[['Quantity','Product', 'Serving Size']]
+    ndf = ndf[['Quantity', 'Product', 'Serving Size']]
     values = ndf.values.tolist()
     headings = ndf.columns.tolist()
     # print(ndf)
