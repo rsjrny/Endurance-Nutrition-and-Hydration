@@ -6,20 +6,9 @@ import os
 import PySimpleGUI as sg
 
 import sql
-import sys
 
 
 # https://docs.python.org/3/library/configparser.html
-
-
-def get_vars(varname):
-
-    return
-
-
-def save_vars(varname):
-
-    return
 
 
 def pace_to_seconds(pace):
@@ -61,11 +50,37 @@ def calc_requirements(inwater=0, incal=0, insod=0, dectime=0.0):
 
 
 def get_ini():
+    """
+    read the ini file and return all values in a dict
+    :return:
+    """
+    # print('in get_ini')
     inifile = os.path.join(os.getcwd(), 'DataFiles/config.ini')
+
+    if not os.path.exists(inifile):
+        create_inifile(inifile)
+        # print('created new ini')
     config = configparser.ConfigParser()
     config.read(inifile)
+    return inifile, config, dict(config.items('RNHDEFS'))
 
-    return inifile, config
+
+def create_inifile(inifile):
+    config = configparser.RawConfigParser()
+    config.add_section('RNHDEFS')
+    config.set('RNHDEFS', 'milesv', '10')
+    config.set('RNHDEFS', 'pacev', '7:05')
+    config.set('RNHDEFS', 'caloriesv', '240')
+    config.set('RNHDEFS', 'sodiumv', '500')
+    config.set('RNHDEFS', 'waterv', '500')
+    config.set('RNHDEFS', 'dectime', '0.0')
+    config.set('RNHDEFS', 'comptime', '4:30:00')
+    config.set('RNHDEFS', 'compmsg', 'Time to complete is: 2:05:00 (2.08) hours')
+    config.set('RNHDEFS', 'theme', 'BlueMono')
+    config.set('RNHDEFS', 'location', 'None')
+    config.set('RNHDEFS', 'winsize', 'None')
+    write_config(inifile, config)
+    return
 
 
 def set_config(config, section, element, value):
@@ -80,14 +95,21 @@ def get_config(config, section, element):
 def write_config(infile, config):
     with open(infile, 'w') as configfile:
         config.write(configfile)
+    configfile.close()
 
 
 def rewrite_config_file(inifile, configs, values):
-    configs['DEFAULT']['milesV'] = values['-INDISTANCE-']
-    configs['DEFAULT']['paceV'] = values['-INPACE-']
-    configs['DEFAULT']['caloriesV'] = values['-INCALORIES-']
-    configs['DEFAULT']['waterV'] = values['-INWATER-']
-    configs['DEFAULT']['sodiumV'] = values['-INSODIUM-']
+    configs['RNHDEFS']['milesv'] = values['milesv']
+    configs['RNHDEFS']['pacev'] = values['pacev']
+    configs['RNHDEFS']['caloriesv'] = values['caloriesv']
+    configs['RNHDEFS']['waterv'] = values['waterv']
+    configs['RNHDEFS']['sodiumv'] = values['sodiumv']
+    configs['RNHDEFS']['dectime'] = values['dectime']
+    configs['RNHDEFS']['comptime'] = values['comptime']
+    configs['RNHDEFS']['compmsg'] = values['compmsg']
+    configs['RNHDEFS']['theme'] = values['theme']
+    configs['RNHDEFS']['location'] = values['location']
+    configs['RNHDEFS']['winsize'] = values['winsize']
     write_config(inifile, configs)
 
 
@@ -114,7 +136,7 @@ def build_selected_list(df):
     :return: df
     """
     ndf = df.loc[df['Quantity'] > 0].copy()
-    ndf = ndf[['Quantity','Product', 'Serving Size']]
+    ndf = ndf[['Quantity', 'Product', 'Serving Size']]
     values = ndf.values.tolist()
     headings = ndf.columns.tolist()
     # print(ndf)
