@@ -36,10 +36,14 @@ Enter your Id and Key under the settings menu
 
 ## Installation Notes
 
-use pyinstaller --onefile --windowed RunningNutrition.py  
-to create the executable file
-copy the folder DataFiles and the exe to a separate folder  
-deliver the new folder to the destination
+Build the exe was performed using 
+pyinstaller --onefile --windowed RunningNutrition.py  
+
+### Execution
+
+copy /dist/RunningNutrition.exe and 
+/DataFiles/*.*  to a new folder   
+cd to the folder then execute RunningNutrition.exe
 
 ## Author
 
