@@ -49,25 +49,31 @@ def calc_requirements(inwater=0, incal=0, insod=0, dectime=0.0):
     return reqcal, reqsod, reqwat
 
 
-def get_ini():
+def get_ini(inifile='DataFiles/config.ini'):
     """
     read the ini file and return all values in a dict
     :return:
     """
     # print('in get_ini')
-    inifile = os.path.join(os.getcwd(), 'DataFiles/config.ini')
+    inifile = os.path.join(os.getcwd(), inifile)
 
     if not os.path.exists(inifile):
         create_inifile(inifile)
         # print('created new ini')
-    config = configparser.ConfigParser()
+    config = configparser.RawConfigParser()
     config.read(inifile)
-    return inifile, config, dict(config.items('RNHDEFS'))
+    # nuts = dict(config.items('RNHDEFS') + config.items('NUTRITIONIX'))
+    return inifile, config
+
+
+def read_ini(config, section):
+    return dict(config.items(section))
 
 
 def create_inifile(inifile):
     config = configparser.RawConfigParser()
-    config.add_section('RNHDEFS')
+    if 'RNHDEFS' not in config.sections():
+        config.add_section('RNHDEFS')
     config.set('RNHDEFS', 'milesv', '10')
     config.set('RNHDEFS', 'pacev', '7:05')
     config.set('RNHDEFS', 'caloriesv', '240')
@@ -79,16 +85,25 @@ def create_inifile(inifile):
     config.set('RNHDEFS', 'theme', 'BlueMono')
     config.set('RNHDEFS', 'location', 'None')
     config.set('RNHDEFS', 'winsize', 'None')
+    if 'NUTRITIONIX' not in config.sections():
+        config.add_section('NUTRITIONIX')
+    config.set('NUTRITIONIX', 'app_id', 'None')
+    config.set('NUTRITIONIX', 'app_key', 'None')
+
     write_config(inifile, config)
     return
 
 
 def set_config(config, section, element, value):
+    # if section does not exist create it
+    if section not in config.sections():
+        config.add_section(section)
+    # if element does not exist create it
+    # set the value
     config.set(section, element, value)
 
 
 def get_config(config, section, element):
-
     return config.get(section, element)
 
 
@@ -110,6 +125,7 @@ def rewrite_config_file(inifile, configs, values):
     configs['RNHDEFS']['theme'] = values['theme']
     configs['RNHDEFS']['location'] = values['location']
     configs['RNHDEFS']['winsize'] = values['winsize']
+
     write_config(inifile, configs)
 
 
@@ -215,3 +231,11 @@ def sort_table(table, cols, order):
         sg.popup_error('Error in sort_table', 'Exception in sort_table', e)
 
     return table, order
+
+
+if __name__ == "__main__":
+    # inifile, configs = get_ini('DataFiles/testconfig.ini')
+    # set_config(configs, 'TEST', 'elemtest', 'testvalue')
+    # write_config(inifile, configs)
+
+    exit()

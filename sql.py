@@ -127,7 +127,6 @@ def searchdb(query):
     :param query: ex. SELECT Sodium FROM Product WHERE Product = 'GU Gel'
     :return: list of returned results
     """
-    # print(query)
     con = connect()
     cur = con.cursor()
     cur.execute(query)

@@ -29,3 +29,10 @@ def get_mainhelp():
             )
     return text
 
+
+def nutritionix_help():
+        text = ('The nutrition search feature is powered by NutritionIX.com.\n'
+                'signup for a free account at https://developer.nutritionix.com \n'
+                '\n'
+                'Enter you app_id and app_key in the Settings...Nutritionix popup'
+                )

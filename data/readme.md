@@ -1,1 +1,0 @@
-### this data folder contains files necessary for Nutritionix to operate

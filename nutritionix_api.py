@@ -19,7 +19,7 @@ class NutritionixAPI:
         self.id_to_name_mapping = self._load_id_to_name_mapping()
 
     def _load_id_to_name_mapping(self) -> Dict[int, str]:
-        mapping_file_path = "data/Nutrition_mapping.csv"
+        mapping_file_path = "DataFiles/Nutrition_mapping.csv"
         mapping_df = pd.read_csv(mapping_file_path)
         self.id_to_unit_mapping = dict(zip(mapping_df['attr_id'], mapping_df['unit']))
         return dict(zip(mapping_df['attr_id'], mapping_df['name']))

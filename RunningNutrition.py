@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from ctypes import windll
 import ast
-# https://stackoverflow.com/questions/41315873/attempting-to-resolve-blurred-tkinter-text-scaling-on-windows-10-high-dpi-disp/43046744
+from nutritionix_api import NutritionixAPI, NutrientCalculator
 windll.shcore.SetProcessDpiAwareness(1)
 import helpfiles
 import sql
@@ -101,8 +101,168 @@ def get_pop_location(window):
     poploc0 = winloc[0] + 1000
     poploc1 = winloc[1] + 200
     poploc = (poploc0, poploc1)
+    errloc = (poploc0+350, poploc1+350)
 
-    return winloc, poploc, winsize
+    return winloc, poploc, errloc, winsize
+
+
+def get_get_desired_theme():
+    """
+    Text enter fields for login Id and Key
+    Verify the login when ok is pressed
+    Stored the Id and Key in the ini file
+    :return:
+    """
+    layout = [
+        [sg.Text('Select the theme from the list ')],
+        [sg.Listbox(sg.theme_list(), key='themelist', size=(20, 15))],
+        [sg.Button('OK'), sg.Button('Cancel')],
+    ]
+
+    window = sg.Window('Select the theme', layout, location=poploc).Finalize()
+
+    while True:
+        event, values = window.read()
+
+        if event == sg.WINDOW_CLOSED or event == 'Cancel':
+            window.close()
+            return ''
+        else:
+            window.close()
+            return values['themelist'][0]
+
+
+def get_nutritionix_login(config):
+    """
+    Text enter fields for login Id and Key
+    Verify the login when ok is pressed
+    Stored the Id and Key in the ini file
+    :return:
+    """
+    layout = [
+        [sg.Text('Enter NutritionIX Id '), sg.InputText('', key='appid')],
+        [sg.Text('Enter NutritionIX Key'), sg.InputText('', key='appkey')],
+        [sg.Button('OK'), sg.Button('Cancel')],
+    ]
+
+    window = sg.Window('NutritionIX Login Values', layout, location=poploc).Finalize()
+    # todo: retrieve login info if it aleady exists
+    while True:
+        event, values = window.read()
+
+        if event == sg.WINDOW_CLOSED or event == 'Cancel':
+            break
+        else:
+            # add login to ini and verify
+            utils.set_config(config, 'NUTRITIONIX', 'app_id', values['appid'])
+            utils.set_config(config, 'NUTRITIONIX', 'app_key', values['appkey'])
+            break
+
+    window.close()
+
+    return
+
+
+def list_nutritionix_items():
+    """
+    Text enter fields for login Id and Key
+    Verify the login when ok is pressed
+    Stored the Id and Key in the ini file
+    :return:
+    """
+    items = ['']
+    fd_dict = {}
+    layout = [
+        [sg.Text('Enter Product to Search: '), sg.InputText('', key='-SEARCHFOR-'), sg.Button('Search')],
+        [sg.Radio('Branded', "RADIO1", default=True, key='-brand-'), sg.Radio('Common', "RADIO1", default=False, key='-comm-')],
+        [sg.Text('Select your product'), sg.Listbox(items, key='-itemlist-', select_mode='LISTBOX_SELECT_MODE_SINGLE', enable_events=True, size=(45,10))],
+        [sg.Button('OK'), sg.Button('Cancel')],
+    ]
+
+    window = sg.Window('Online Product Search (NutritionIX)', layout, location=poploc, keep_on_top=True).Finalize()
+    thisitem = ''
+    while True:
+
+        items = ['']
+        event, values = window.read()
+
+        if event == sg.WINDOW_CLOSED or event == 'Cancel':
+            break
+
+        elif event == '-itemlist-':
+            thisitem = values['-itemlist-'][0]
+
+        elif event == 'OK':
+            if thisitem == '':
+                sg.popup_error('You did not select a product from the list, either select an item or press cancel to quit', location=errloc, keep_on_top=True)
+                continue
+            # let's see if this is already in the database, if so no need to waste a call
+            dbsrch = sql.searchdb("SELECT Product FROM Product WHERE Product like '%" + thisitem + "'")
+            if dbsrch:
+                # the item is already in the db, do not waste a lookup
+                continue
+            response = nutritionix_api.get_item(fd_dict[thisitem])
+            #print(response)
+            #response = {'foods': [{'food_name': 'Electrolyte, Fruit Punch', 'brand_name': 'Nuun', 'serving_qty': 1, 'serving_unit': 'tablet', 'serving_weight_grams': 5.5, 'nf_metric_qty': 5.5, 'nf_metric_uom': 'g', 'nf_calories': 10, 'nf_total_fat': None, 'nf_saturated_fat': None, 'nf_cholesterol': None, 'nf_sodium': 360, 'nf_total_carbohydrate': 4, 'nf_dietary_fiber': None, 'nf_sugars': 1, 'nf_protein': None, 'nf_potassium': 100, 'nf_p': None, 'full_nutrients': [{'attr_id': 205, 'value': 4}, {'attr_id': 208, 'value': 10}, {'attr_id': 269, 'value': 1}, {'attr_id': 306, 'value': 100}, {'attr_id': 307, 'value': 360}], 'nix_brand_name': 'Nuun', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'nix_item_name': 'Electrolyte, Fruit Punch', 'nix_item_id': '58411d408e527e7352740f89', 'metadata': {}, 'source': 8, 'ndb_no': None, 'tags': None, 'alt_measures': None, 'lat': None, 'lng': None, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/58411d458e527e7352740f8b.jpeg', 'highres': None, 'is_user_uploaded': False}, 'note': None, 'class_code': None, 'brick_code': None, 'tag_id': None, 'updated_at': '2022-08-02T21:02:15+00:00', 'nf_ingredient_statement': 'WATER, SUGAR, GRAPEFRUIT JUICE CONCENTRATE, CARBON DIOXIDE, GRAPEFRUIT EXTRACT, CITRIC ACID, NATURAL FLAVORS.'}]}
+            # print(nutrient_calculator.calculate_calorie_content_me(nutrient_calculator.aggregate_nutrients(response)))
+            response = response.get('foods')[0]
+            brand = str(response.get('brand_name'))
+            my_item = brand + " " + thisitem
+            srv_unit = response.get('serving_unit', 0)
+            srv_qty = response.get('serving_qty', 0)
+            cals = response.get('nf_calories', 0)
+            fat = response.get('nf_total_fat', 0)
+            prot = response.get('nf_protein', 0)
+            carbs = response.get('nf_carbs', 0)
+            sodium = response.get('nf_sodium', 0)
+            fiber = response.get('nf_dietary_fiber', 0)
+            sugars = response.get('nf_sugars', 0)
+            potassium = response.get('nf_potassium', 0)
+            # pic = response.get('photo')
+            # print(pic)
+            sql.ins_rep(inquant=0, inprod=my_item, insod=sodium, incarb=carbs, incal=cals, inwat=0,
+                        inserv=srv_qty, insrvt=srv_unit, incaf=0, incom='')
+
+            continue
+
+        elif event == 'Search':
+            # if searchfor is empty tell user
+            if values['-SEARCHFOR-'] == '':
+                sg.popup_error("Enter a search term", location=errloc)
+                continue
+
+            # nutritionix_api = NutritionixAPI(app_id=vvalues['app_id'], app_key=vvalues['app_key'])
+            response = nutritionix_api.search_instant(query=values['-SEARCHFOR-'])
+            # response = {'common': [], 'branded': [{'food_name': 'Hydration Endurance Drink Mix, Blueberry Strawberry', 'serving_unit': 'scoop', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Hydration Endurance Drink Mix, Blueberry Strawberry', 'serving_qty': 0.5, 'nf_calories': 30, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/5c91e949c1178fb72996270a.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '5c91e943c1178fb729962709', 'locale': 'en_US'}, {'food_name': 'Endurance Drink Mix, Orange Mango', 'serving_unit': 'pack', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Endurance Drink Mix, Orange Mango', 'serving_qty': 1, 'nf_calories': 60, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/5cd675292e8774f258cb5b95.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '5cd67526fd8f8bc366ebe20d', 'locale': 'en_US'}, {'food_name': 'Nacho Flavored Plant Based Protein Chips', 'serving_unit': 'oz', 'nix_brand_id': '5e32828558cf634277155db7', 'brand_name_item_name': 'Endurance Nacho Flavored Plant Based Protein Chips', 'serving_qty': 1, 'nf_calories': 110, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/64fef62c598200000a895caa.jpeg'}, 'brand_name': 'Endurance', 'region': 1, 'brand_type': 2, 'nix_item_id': '64fef62c598200000a895ca9', 'locale': 'en_US'}, {'food_name': 'Sport, Lemon Lime', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Sport, Lemon Lime', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/608c022b540b5212d7691e91.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '55e5f48c73b5cdfc437292e6', 'locale': 'en_US'}, {'food_name': 'Electrolyte Supplement, Citrus Fruit', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Electrolyte Supplement, Citrus Fruit', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/62adce39af1b1900061480c1.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '586c9f28fec639615cafeac6', 'locale': 'en_US'}, {'food_name': 'Electrolyte, Fruit Punch', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Electrolyte, Fruit Punch', 'serving_qty': 1, 'nf_calories': 10, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/58411d458e527e7352740f8b.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '58411d408e527e7352740f89', 'locale': 'en_US'}, {'food_name': 'Electrolyte Tab, Strawberry Lemonade', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Electrolyte Tab, Strawberry Lemonade', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/56e290f42d25f2e24244d2a0.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '56e290e34ba8078112de99d2', 'locale': 'en_US'}, {'food_name': 'Strawberry Lemonade Flavored Instant Electrolyte Drink Mix', 'serving_unit': 'stick', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Strawberry Lemonade Flavored Instant Electrolyte Drink Mix', 'serving_qty': 1, 'nf_calories': 25, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/652fbde7b5eb9800090a6280.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '652fbde7b5eb9800090a627f', 'locale': 'en_US'}, {'food_name': 'Wild Strawberry Effervescent Tablets', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Wild Strawberry Effervescent Tablets', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/6389dc5437f9e200066f693c.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '6389dc5337f9e200066f693b', 'locale': 'en_US'}, {'food_name': 'Tropical Blast Endurance Blend', 'serving_unit': 'scoop', 'nix_brand_id': '55784572ddfe47543a147ccd', 'brand_name_item_name': 'E-Fuel Tropical Blast Endurance Blend', 'serving_qty': 1, 'nf_calories': 70, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/6510191cb8dd7600083feea9.jpeg'}, 'brand_name': 'E-Fuel', 'region': 1, 'brand_type': 2, 'nix_item_id': '650047a4948e160008478b4a', 'locale': 'en_US'}, {'food_name': 'Active, Tri-Berry', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Active, Tri-Berry', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/615b37f26ba4f4525f8e4062.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '55df5ba34da00e9525173ef5', 'locale': 'en_US'}, {'food_name': 'Energy Supplement, Mixed Berry', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Energy Supplement, Mixed Berry', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/651feba65de4ac000814da37.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '5860c1738e84494e3fd29f92', 'locale': 'en_US'}, {'food_name': 'Energy Tablet, Cherry Limeade', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Energy Tablet, Cherry Limeade', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/6247051dd4078c0009be4d36.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '58256daee2e184b12f05edbb', 'locale': 'en_US'}, {'food_name': 'Active Electrolyte Supplement, Watermelon', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Active Electrolyte Supplement, Watermelon', 'serving_qty': 1, 'nf_calories': 10, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/5854e3ad3761fb8a451634fa.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '585392465e3d356b0667dae7', 'locale': 'en_US'}, {'food_name': 'Immunity, Blueberry Tangerine', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Immunity, Blueberry Tangerine', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/6092dfb78e85e93ea114be40.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '5b98bed24605ec9240feeea2', 'locale': 'en_US'}, {'food_name': 'Electrolyte Supplement', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Electrolyte Supplement', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/64a54fd5384e800008708e8a.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '59a26e9a52cf65760b93a454', 'locale': 'en_US'}, {'food_name': 'Energy Supplement, Mango Orange', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Energy Supplement, Mango Orange', 'serving_qty': 1, 'nf_calories': 10, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/583d280e69147544449db81c.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '583d28336abddf40540e4bd0', 'locale': 'en_US'}, {'food_name': 'Blueberry Pomegranate Hydration Vitamins', 'serving_unit': 'tablet', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'brand_name_item_name': 'Nuun Blueberry Pomegranate Hydration Vitamins', 'serving_qty': 1, 'nf_calories': 10, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/64942b0ea2478900082743b5.jpeg'}, 'brand_name': 'Nuun', 'region': 1, 'brand_type': 2, 'nix_item_id': '64942b0da2478900082743b4', 'locale': 'en_US'}, {'food_name': 'Raspberry lemonade dietary supplement', 'serving_unit': 'tablet', 'nix_brand_id': '5d774d5d46bed3f11d446ea7', 'brand_name_item_name': 'Nuun Hydration Raspberry lemonade dietary supplement', 'serving_qty': 1, 'nf_calories': 15, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/643bd6ed13d3d2000897fde8.jpeg'}, 'brand_name': 'Nuun Hydration', 'region': 1, 'brand_type': 2, 'nix_item_id': '643bd6ec13d3d2000897fde7', 'locale': 'en_US'}, {'food_name': 'Original Plant Based Protein Chips', 'serving_unit': 'bag', 'nix_brand_id': '651febf75de4ac000814db2c', 'brand_name_item_name': 'Natural Endurance Original Plant Based Protein Chips', 'serving_qty': 1, 'nf_calories': 150, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/651febf75de4ac000814db2e.jpeg'}, 'brand_name': 'Natural Endurance', 'region': 1, 'brand_type': 2, 'nix_item_id': '651febf75de4ac000814db2d', 'locale': 'en_US'}]}
+            if values['-brand-']:
+                fdtype = 'branded'
+            else:
+                fdtype = 'common'
+
+            fd_list = response.get(fdtype)
+            fd_dict = {}
+            for food in fd_list:
+                if fdtype == 'branded':
+                    fname = food.get("brand_name_item_name", "Unknown")
+                else:
+                    fname = food.get("food_name", "Unknown")
+
+                fnix = food.get("nix_item_id", "Unknown")
+                fd_dict[fname] = fnix
+                items.append(fname)
+
+            window['-itemlist-'].update(items)
+            # print(items)
+            # print(fd_dict)
+
+            continue
+
+        else:
+            pass
+
+    window.close()
+
+    return
 
 
 def make_window(theme=None):
@@ -113,10 +273,15 @@ def make_window(theme=None):
     else:
         sg.theme('BlueMono')
 
+    if vvalues['theme'] == 'BlueMono':
+        altrowcol = 'lightyellow'
+    else:
+        altrowcol = None
+
     # ------ Menu Definition ------ #
     menu_def = [['&File', ['E&xit']],
                 ['&Settings',
-                 ['Display Theme Choices', 'Select Theme', 'Nutritionix (not available yet)', ['AppId', 'AppKey']], ],
+                 ['Display Theme Choices', 'Select Theme', 'Nutritionix Login']],
                 ['&Help', ['&Using Running Nutrition', '&About...']], ]
 
     # ------- Build the input fields -------- #
@@ -165,7 +330,7 @@ def make_window(theme=None):
                   col_widths=[5, 10, 5],
                   # auto_size_columns=True,
                   num_rows=8,
-                  alternating_row_color='lightyellow',
+                  alternating_row_color=altrowcol,
                   justification='l',
                   key='-STABLE-')]
     ]
@@ -176,7 +341,8 @@ def make_window(theme=None):
          sg.Column(column3),
          sg.Column(column4),
          sg.Column(column5),
-         sg.Column(selected_table), sg.Button('Copy Table', key='-COPYTABLE-')],
+         sg.Column(selected_table), sg.Button('Copy Table', key='-COPYTABLE-'),
+         sg.Button('Search Products', key='-SRCHBTN-')],
     ]
 
     select_columns = [[sg.Listbox(mlist, select_mode='LISTBOX_SELECT_MODE_SINGLE', size=(30, 10),
@@ -192,8 +358,10 @@ def make_window(theme=None):
 
     input_table = [
         [sg.Table(values=tabdata, headings=headings, enable_click_events=True,
-                  justification='l', selected_row_colors=('white', 'blue'),
-                  alternating_row_color='lightyellow', display_row_numbers=False,
+                  justification='l',
+                  # selected_row_colors=('white', 'blue'),
+                  alternating_row_color=altrowcol,
+                  display_row_numbers=False,
                   key='-PTABLE-', expand_x=True, expand_y=True), ]
     ]
 
@@ -283,7 +451,9 @@ def make_window(theme=None):
     window = sg.Window('Running Nutrition and Hydration', layout, resizable=True, grab_anywhere=True,
                        finalize=True, auto_size_buttons=True, element_justification='l')
     if vvalues['location'] != 'None':
-        winloc = ast.literal_eval(vvalues['location'])
+        winloc = vvalues['location']
+        if isinstance(winloc, str):
+            winloc = ast.literal_eval(winloc)
         window.move(winloc[0], winloc[1])
         # TODO: implement window size remember (winsize var)
 
@@ -291,7 +461,9 @@ def make_window(theme=None):
 
 
 # get the ini file values for the window
-inifile, configs, vvalues = utils.get_ini()
+inifile, configs = utils.get_ini()
+vvalues = utils.read_ini(configs, 'RNHDEFS')
+vvalues.update(utils.read_ini(configs,'NUTRITIONIX'))
 milesV = vvalues['milesv']
 paceV = vvalues['pacev']
 caloriesV = vvalues['caloriesv']
@@ -299,6 +471,18 @@ sodiumV = vvalues['sodiumv']
 waterV = vvalues['waterv']
 compTime = vvalues['comptime']
 compmsg = vvalues['compmsg']
+
+# app_id = 'e6541bf3'
+# app_key = '2848dfdacf3be363a7835fffd9aaf72a'
+
+app_id = vvalues['app_id']
+app_key = vvalues['app_key']
+nutritionix_api = NutritionixAPI(app_id=app_id, app_key=app_key)
+nutrient_calculator = NutrientCalculator()
+# works, move it to where it belongs
+# response = nutritionix_api.get_nutrients(query='Nuun Endurance Strawberry Lemonade')
+# # response = nutritionix_api.search_instant(query='Nuun Endurance Strawberry Lemonade')
+# print(response)
 
 df, tabdata, headings, mlist = build_product_lists()
 sdf, sdata, shead = utils.build_selected_list(df)
@@ -312,7 +496,7 @@ window = make_window(vvalues['theme'])
 while True:
     event, values = window.read()
     # print(event, values)
-    winloc, poploc, winsize = get_pop_location(window)
+    winloc, poploc, errloc, winsize = get_pop_location(window)
     vvalues['location'] = str(winloc)
     vvalues['winsize'] = str(winsize)
     if event == sg.WIN_CLOSED or event == 'Exit':  # if user closes window or clicks cancel
@@ -346,18 +530,19 @@ while True:
     if event == 'Display Theme Choices':
         sg.theme_previewer(columns=5, scrollable=True, scroll_area_size=(1200, 400))
 
+    if event == 'Nutritionix Login':
+        get_nutritionix_login(configs)
+
+    if event == '-SRCHBTN-':
+        list_nutritionix_items()
+        continue
+
     if event == 'Select Theme':
         # TODO: get theme chooser working
-        themes = sg.theme_list()
-        my_theme = sg.popup_get_text('Enter the desired theme name', keep_on_top=True, location=poploc)
-        if my_theme == None:
-            continue
-        if my_theme not in themes:
-            sg.popup_error('The theme you entered is not a valid theme choice, try again. Here'
-                           'is the list' + str(themes), keep_on_top=True, location=poploc)
-            continue
-        window.close()
-        window = make_window(theme=my_theme)
+        my_theme = get_get_desired_theme()
+        if my_theme:
+            window.close()
+            window = make_window(theme=my_theme)
 
     # If a product is selected set the NNPROD variable used by others
     # and highlight and show the entry in the -PTABLE-
@@ -408,7 +593,6 @@ while True:
         window['-PTABLE-'].update(sorted_table_values)
         sdf, sdata, shead = utils.build_selected_list(df)
         window['-STABLE-'].update(sdata)
-        #
 
         continue
 
@@ -453,8 +637,11 @@ while True:
 
     if isinstance(event, tuple) and event[0] == '-PTABLE-':
         # print('in isinstance tuple: ', event)
+
         if event[0] == '-PTABLE-':
-            # print('in event: ', event[0])
+            # print('in event: ', event)
+            if event[2][0] is None:
+                continue
             if event[2][0] == -1 and event[2][1] != -1:  # Header was clicked and wasn't the "row" column
                 # print('event[2][0] is -1', event)
                 col_num_clicked = event[2][1]
@@ -465,7 +652,7 @@ while True:
                 window['-PTABLE-'].Widget.see(window['-PTABLE-'].tree_ids[0])
 
             if event[2][0] >= 0:
-                window['-PTABLE-'].update(row_colors=((event[2][0], 'white', 'red'), (event[2][0], 'white', 'red')))
+                window['-PTABLE-'].update(row_colors=((event[2][0], 'white', 'red'), (event[2][0], 'white', 'darkblue')))
                 # set the table display to the top
                 iix = int(event[2][0])
                 # print(iix, type(iix))

@@ -1,8 +1,12 @@
 # Running Nutrition and Hydration
 
+# far from complete
+
 ## Description
 
-This app is designed to help you choose the correct nutrition for your run based on your hourly hydration and Nutrition requirements
+This app is designed to help you choose the correct nutrition for your run based on your hourly hydration and Nutrition requirements.
+You can manually enter the product and nutritional information or signup for a free Id and Key from NutritionIX and download
+the nutritional values from their database.
 
 ## Features
 
@@ -20,13 +24,26 @@ This app is designed to help you choose the correct nutrition for your run based
 5. Update your Run input parameters.
 6. Enter the quantity for each item you will bring.
 
+## NutritionIX Information
+
+https://developer.nutritionix.com/
+
+Signup for a free account (limited to 25 searches per day)  
+Choose View API Keys  
+Select 'Create new key'  
+Enter your Id and Key under the settings menu   
 
 
-## Notes
+## Installation Notes
 
+use pyinstaller --onefile --windowed RunningNutrition.py  
+to create the executable file
+copy the folder DataFiles and the exe to a separate folder  
+deliver the new folder to the destination
 
 ## Author
 
 Russ Lilley
 RussLilley@yahoo.com
+rsjrny software
 
