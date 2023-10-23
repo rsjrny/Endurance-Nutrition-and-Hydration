@@ -45,6 +45,13 @@ copy /dist/RunningNutrition.exe and
 /DataFiles/*.*  to a new folder   
 cd to the folder then execute RunningNutrition.exe
 
+## packages used
+
+NutritionIX
+PySimpleGiu
+Pandas
+
+
 ## Author
 
 Russ Lilley
