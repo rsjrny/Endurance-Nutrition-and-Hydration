@@ -47,6 +47,7 @@ cd to the folder then execute RunningNutrition.exe
 
 ## packages used
 
+Python 3.11  
 NutritionIX  
 PySimpleGiu  
 Pandas

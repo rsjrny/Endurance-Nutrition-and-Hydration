@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 
+/DataFiles/config.ini
 build/
 develop-eggs/
 # dist/
