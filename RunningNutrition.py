@@ -1,12 +1,29 @@
 import PySimpleGUI as sg
 from ctypes import windll
 import ast
+
 from nutritionix_api import NutritionixAPI, NutrientCalculator
+
 windll.shcore.SetProcessDpiAwareness(1)
 import helpfiles
 import sql
 import textwrap
 import utils
+
+# todo: checkout
+# https://github.com/RobertJN64/TKinterModernThemes
+# https://github.com/TomSchimansky/CustomTkinter
+# https://github.com/ragardner/tksheet/wiki/Version-6
+# https://www.youtube.com/watch?v=FMOLoC5L1RE&ab_channel=TheCSClassroom
+sg.set_options()
+
+
+def get_scaling():
+    # called before window created
+    root = sg.tk.Tk()
+    scaling = root.winfo_fpixels('1i')/72
+    root.destroy()
+    return scaling
 
 
 def build_product_lists():
@@ -101,7 +118,7 @@ def get_pop_location(window):
     poploc0 = winloc[0] + 1000
     poploc1 = winloc[1] + 200
     poploc = (poploc0, poploc1)
-    errloc = (poploc0+350, poploc1+350)
+    errloc = (poploc0 + 350, poploc1 + 350)
 
     return winloc, poploc, errloc, winsize
 
@@ -174,8 +191,11 @@ def list_nutritionix_items():
     fd_dict = {}
     layout = [
         [sg.Text('Enter Product to Search: '), sg.InputText('', key='-SEARCHFOR-'), sg.Button('Search')],
-        [sg.Radio('Branded', "RADIO1", default=True, key='-brand-'), sg.Radio('Common', "RADIO1", default=False, key='-comm-')],
-        [sg.Text('Select your product'), sg.Listbox(items, key='-itemlist-', select_mode='LISTBOX_SELECT_MODE_SINGLE', enable_events=True, size=(45,10))],
+        [sg.Radio('Branded', "RADIO1", default=True, key='-brand-'),
+         sg.Radio('Common', "RADIO1", default=False, key='-comm-')],
+        [sg.Text('Select your product'),
+         sg.Listbox(items, key='-itemlist-', select_mode='LISTBOX_SELECT_MODE_SINGLE', enable_events=True,
+                    size=(45, 10))],
         [sg.Button('OK'), sg.Button('Cancel')],
     ]
 
@@ -194,7 +214,9 @@ def list_nutritionix_items():
 
         elif event == 'OK':
             if thisitem == '':
-                sg.popup_error('You did not select a product from the list, either select an item or press cancel to quit', location=errloc, keep_on_top=True)
+                sg.popup_error(
+                    'You did not select a product from the list, either select an item or press cancel to quit',
+                    location=errloc, keep_on_top=True)
                 continue
             # let's see if this is already in the database, if so no need to waste a call
             dbsrch = sql.searchdb("SELECT Product FROM Product WHERE Product like '%" + thisitem + "'")
@@ -202,8 +224,8 @@ def list_nutritionix_items():
                 # the item is already in the db, do not waste a lookup
                 continue
             response = nutritionix_api.get_item(fd_dict[thisitem])
-            #print(response)
-            #response = {'foods': [{'food_name': 'Electrolyte, Fruit Punch', 'brand_name': 'Nuun', 'serving_qty': 1, 'serving_unit': 'tablet', 'serving_weight_grams': 5.5, 'nf_metric_qty': 5.5, 'nf_metric_uom': 'g', 'nf_calories': 10, 'nf_total_fat': None, 'nf_saturated_fat': None, 'nf_cholesterol': None, 'nf_sodium': 360, 'nf_total_carbohydrate': 4, 'nf_dietary_fiber': None, 'nf_sugars': 1, 'nf_protein': None, 'nf_potassium': 100, 'nf_p': None, 'full_nutrients': [{'attr_id': 205, 'value': 4}, {'attr_id': 208, 'value': 10}, {'attr_id': 269, 'value': 1}, {'attr_id': 306, 'value': 100}, {'attr_id': 307, 'value': 360}], 'nix_brand_name': 'Nuun', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'nix_item_name': 'Electrolyte, Fruit Punch', 'nix_item_id': '58411d408e527e7352740f89', 'metadata': {}, 'source': 8, 'ndb_no': None, 'tags': None, 'alt_measures': None, 'lat': None, 'lng': None, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/58411d458e527e7352740f8b.jpeg', 'highres': None, 'is_user_uploaded': False}, 'note': None, 'class_code': None, 'brick_code': None, 'tag_id': None, 'updated_at': '2022-08-02T21:02:15+00:00', 'nf_ingredient_statement': 'WATER, SUGAR, GRAPEFRUIT JUICE CONCENTRATE, CARBON DIOXIDE, GRAPEFRUIT EXTRACT, CITRIC ACID, NATURAL FLAVORS.'}]}
+            # print(response)
+            # response = {'foods': [{'food_name': 'Electrolyte, Fruit Punch', 'brand_name': 'Nuun', 'serving_qty': 1, 'serving_unit': 'tablet', 'serving_weight_grams': 5.5, 'nf_metric_qty': 5.5, 'nf_metric_uom': 'g', 'nf_calories': 10, 'nf_total_fat': None, 'nf_saturated_fat': None, 'nf_cholesterol': None, 'nf_sodium': 360, 'nf_total_carbohydrate': 4, 'nf_dietary_fiber': None, 'nf_sugars': 1, 'nf_protein': None, 'nf_potassium': 100, 'nf_p': None, 'full_nutrients': [{'attr_id': 205, 'value': 4}, {'attr_id': 208, 'value': 10}, {'attr_id': 269, 'value': 1}, {'attr_id': 306, 'value': 100}, {'attr_id': 307, 'value': 360}], 'nix_brand_name': 'Nuun', 'nix_brand_id': '51db37cd176fe9790a899b2e', 'nix_item_name': 'Electrolyte, Fruit Punch', 'nix_item_id': '58411d408e527e7352740f89', 'metadata': {}, 'source': 8, 'ndb_no': None, 'tags': None, 'alt_measures': None, 'lat': None, 'lng': None, 'photo': {'thumb': 'https://nutritionix-api.s3.amazonaws.com/58411d458e527e7352740f8b.jpeg', 'highres': None, 'is_user_uploaded': False}, 'note': None, 'class_code': None, 'brick_code': None, 'tag_id': None, 'updated_at': '2022-08-02T21:02:15+00:00', 'nf_ingredient_statement': 'WATER, SUGAR, GRAPEFRUIT JUICE CONCENTRATE, CARBON DIOXIDE, GRAPEFRUIT EXTRACT, CITRIC ACID, NATURAL FLAVORS.'}]}
             # print(nutrient_calculator.calculate_calorie_content_me(nutrient_calculator.aggregate_nutrients(response)))
             response = response.get('foods')[0]
             brand = str(response.get('brand_name'))
@@ -267,6 +289,17 @@ def list_nutritionix_items():
 
 def make_window(theme=None):
     # set up the GUI
+    # Find the number in original screen when GUI designed.
+    # my_scaling = 1.334646962233169  # call get_scaling()
+    my_width, my_height = 1920, 1200  # call sg.Window.get_screen_size()
+
+    # Get the number for new screen
+    scaling_old = get_scaling()
+    width, height = sg.Window.get_screen_size()
+    scaling = scaling_old * min(width / my_width, height / my_height)
+    # print('scaling = ', scaling)
+    sg.set_options(scaling=scaling)
+
     if theme:
         sg.theme(theme)
         vvalues['theme'] = theme
@@ -438,6 +471,8 @@ def make_window(theme=None):
                        sg.Frame('Add or Update Products', ninput_columns),
                        sg.Frame('Instructions', ninstruct_columns)]]
 
+    # print(len(df.columns), len(df), headings, tabdata)
+
     layout = [
         [sg.Menu(menu_def, tearoff=True)],
         [input_frame],
@@ -450,6 +485,10 @@ def make_window(theme=None):
 
     window = sg.Window('Running Nutrition and Hydration', layout, resizable=True, grab_anywhere=True,
                        finalize=True, auto_size_buttons=True, element_justification='l')
+
+    # print(window.get_screen_size())
+    if 'location' not in vvalues:
+        vvalues['location'] = (80, 64)
     if vvalues['location'] != 'None':
         winloc = vvalues['location']
         if isinstance(winloc, str):
@@ -463,7 +502,7 @@ def make_window(theme=None):
 # get the ini file values for the window
 inifile, configs = utils.get_ini()
 vvalues = utils.read_ini(configs, 'RNHDEFS')
-vvalues.update(utils.read_ini(configs,'NUTRITIONIX'))
+vvalues.update(utils.read_ini(configs, 'NUTRITIONIX'))
 milesV = vvalues['milesv']
 paceV = vvalues['pacev']
 caloriesV = vvalues['caloriesv']
@@ -652,7 +691,8 @@ while True:
                 window['-PTABLE-'].Widget.see(window['-PTABLE-'].tree_ids[0])
 
             if event[2][0] >= 0:
-                window['-PTABLE-'].update(row_colors=((event[2][0], 'white', 'red'), (event[2][0], 'white', 'darkblue')))
+                window['-PTABLE-'].update(
+                    row_colors=((event[2][0], 'white', 'red'), (event[2][0], 'white', 'darkblue')))
                 # set the table display to the top
                 iix = int(event[2][0])
                 # print(iix, type(iix))
