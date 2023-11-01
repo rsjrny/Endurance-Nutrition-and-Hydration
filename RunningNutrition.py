@@ -1,4 +1,5 @@
 import PySimpleGUI as sg
+from colour import Color
 from ctypes import windll
 import ast
 
@@ -21,7 +22,7 @@ sg.set_options()
 def get_scaling():
     # called before window created
     root = sg.tk.Tk()
-    scaling = root.winfo_fpixels('1i')/72
+    scaling = root.winfo_fpixels('1i') / 72
     root.destroy()
     return scaling
 
@@ -287,6 +288,23 @@ def list_nutritionix_items():
     return
 
 
+def n_altrowcol(bg: str):
+    # You're free to use whatever color logic you want, but I personally prefer the colour module:
+    # pip install colour
+    bg = Color(bg)
+    luminance_difference = 0.1  # Change this value however you wish.
+
+    if bg.get_luminance() <= 0.5:  # Dark color
+        bg.set_luminance(
+            min(1, bg.get_luminance() + luminance_difference)
+        )  # Brighten the bg
+        return bg.get_hex_l()
+    bg.set_luminance(
+        max(0, bg.get_luminance() - luminance_difference)
+    )  # Darken the bg otherwise.
+    return bg.get_hex_l()
+
+
 def make_window(theme=None):
     # set up the GUI
     # Find the number in original screen when GUI designed.
@@ -357,16 +375,17 @@ def make_window(theme=None):
                [sg.Text('sel sod here', key='-SELSOD-', size=7, background_color='White')],
                # [sg.Text('   ', size=5)]
                ]
-
     selected_table = [
         [sg.Table(values=sdata, headings=['Qty', 'Prod', 'Srv'], enable_click_events=False,
-                  col_widths=[5, 10, 5],
+                  col_widths=[5, 20, 10],
+                  size=(60,8),
                   # auto_size_columns=True,
                   num_rows=8,
-                  alternating_row_color=altrowcol,
+                  alternating_row_color=n_altrowcol(sg.theme_background_color()),
                   justification='l',
                   key='-STABLE-')]
     ]
+
     column6 = [[]]
     input_columns = [
         [sg.Column(column1),
@@ -393,7 +412,7 @@ def make_window(theme=None):
         [sg.Table(values=tabdata, headings=headings, enable_click_events=True,
                   justification='l',
                   # selected_row_colors=('white', 'blue'),
-                  alternating_row_color=altrowcol,
+                  alternating_row_color=n_altrowcol(sg.theme_background_color()),
                   display_row_numbers=False,
                   key='-PTABLE-', expand_x=True, expand_y=True), ]
     ]
@@ -467,9 +486,12 @@ def make_window(theme=None):
         [sg.Frame('Input Area', input_columns, expand_y=False, expand_x=True), ]
     ]
 
-    update_columns = [[sg.Frame('Product Selection', select_columns),
-                       sg.Frame('Add or Update Products', ninput_columns),
-                       sg.Frame('Instructions', ninstruct_columns)]]
+    update_columns = [
+        [sg.Frame('Product Selection', select_columns),
+         sg.Frame('Add or Update Products', ninput_columns),
+         sg.Frame('Instructions', ninstruct_columns)],
+        [sg.Button('Clear All Quantities')]
+    ]
 
     # print(len(df.columns), len(df), headings, tabdata)
 
@@ -497,6 +519,15 @@ def make_window(theme=None):
         # TODO: implement window size remember (winsize var)
 
     return window
+
+
+def rebuild_tables(window):
+    global df, tabdata, headings, mlist, sdf, sdata, shead
+    df, tabdata, headings, mlist = build_product_lists()
+    sdf, sdata, shead = utils.build_selected_list(df)
+    window['-PTABLE-'].update(tabdata)
+    window['-STABLE-'].update(sdata)
+
 
 
 # get the ini file values for the window
@@ -532,6 +563,7 @@ sortO = True  # flag to track the table sort order
 
 window = make_window(vvalues['theme'])
 
+
 while True:
     event, values = window.read()
     # print(event, values)
@@ -541,10 +573,7 @@ while True:
     if event == sg.WIN_CLOSED or event == 'Exit':  # if user closes window or clicks cancel
         break
     set_vvalues()
-    df, tabdata, headings, mlist = build_product_lists()
-    sdf, sdata, shead = utils.build_selected_list(df)
-    window['-PTABLE-'].update(tabdata)
-    window['-STABLE-'].update(sdata)
+    rebuild_tables(window)
     check_input_values(values)
     s_pace = utils.pace_to_seconds(values['-INPACE-'])
     compTime, dectime = utils.calc_time(float(values['-INDISTANCE-']), s_pace)
@@ -575,6 +604,11 @@ while True:
     if event == '-SRCHBTN-':
         list_nutritionix_items()
         continue
+
+    if event == 'Clear All Quantities':
+        if sg.popup_ok_cancel('Press Ok to Clear All Quantities', keep_on_top=True, location=poploc) == 'OK':
+            sql.reset_quantity()
+            rebuild_tables(window)
 
     if event == 'Select Theme':
         # TODO: get theme chooser working

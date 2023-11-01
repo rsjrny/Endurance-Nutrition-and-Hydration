@@ -1,7 +1,5 @@
 # Running Nutrition and Hydration
 
-# far from complete
-
 ## Description
 
 This app is designed to help you choose the correct nutrition for your run based on your hourly hydration and Nutrition requirements.
@@ -37,7 +35,7 @@ Enter your Id and Key under the settings menu
 ## Installation Notes
 
 Build the exe was performed using 
-pyinstaller --onefile --windowed RunningNutrition.py  
+pyinstaller --onefile RunningNutrition.py  
 
 ### Execution
 
